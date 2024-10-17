@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fetch API Data with Video Background</title>
+    <style>
+      /* General styling */
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+
+      /* Video background styling */
+      #video-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        z-index: -1;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        z-index: 1;
+      }
+
+      h2 {
+        color: rgb(33, 37, 41);
+        text-align: center;
+      }
+
+      /* Input and button styling */
+      label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: rgb(50, 50, 100);
+      }
+
+      input[type="text"] {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 2px solid rgb(200, 200, 255);
+        border-radius: 4px;
+        font-size: 16px;
+        outline: none;
+      }
+
+      input[type="text"]:focus {
+        border-color: rgb(120, 120, 255);
+      }
+
+      button {
+        padding: 10px 20px;
+        background-color: rgb(0, 123, 255);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        display: block;
+        margin: 0 auto;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: rgb(0, 100, 255);
+      }
+
+      #error-message {
+        color: rgb(255, 0, 0);
+        margin-top: 10px;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      /* Table styling */
+      table {
+        width: 100%;
+        margin-top: 20px;
+        border-collapse: collapse;
+        border: 2px solid rgb(220, 220, 255);
+      }
+
+      th,
+      td {
+        border: 1px solid rgb(220, 220, 255);
+        padding: 12px;
+        text-align: left;
+        font-size: 14px;
+      }
+
+      th {
+        background-color: rgb(0, 123, 255);
+        color: white;
+      }
+
+      td {
+        background-color: rgb(245, 245, 255);
+      }
+
+      tr:nth-child(even) td {
+        background-color: rgb(230, 230, 255);
+      }
+
+      tr:hover td {
+        background-color: rgb(210, 210, 255);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Video background -->
+    <video autoplay muted loop id="video-background">
+      <source src="videoplayback.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+
+    <div class="container">
+      <h2>Fetch Data from API</h2>
+
+      <!-- Input field for API URL -->
+      <label for="apiUrlInput">API Endpoint URL:</label>
+      <input type="text" id="apiUrlInput" placeholder="Enter API URL" />
+      <button id="fetchDataButton">Fetch Data</button>
+
+      <!-- Error message if API fetch fails -->
+      <p id="error-message"></p>
+
+      <!-- Table to display the fetched data -->
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>UserID</th>
+            <th>Title</th>
+            <th>Body</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      document
+        .getElementById("fetchDataButton")
+        .addEventListener("click", () => {
+          const apiUrl = document.getElementById("apiUrlInput").value;
+          const tableBody = document.querySelector("#data-table tbody");
+          const errorMessage = document.getElementById("error-message");
+
+          // Clear previous data and error message
+          clearTable(tableBody);
+          clearError(errorMessage);
+
+          // Validate API URL
+          if (!apiUrl) {
+            displayError(errorMessage, "Please enter a valid API URL.");
+            return;
+          }
+
+          // Fetch data from the API
+          fetchData(apiUrl)
+            .then((data) => {
+              if (Array.isArray(data)) {
+                populateTable(data, tableBody, errorMessage);
+              } else {
+                // If it's a single object, wrap it in an array and populate the table
+                populateTable([data], tableBody, errorMessage);
+              }
+            })
+            .catch((error) =>
+              displayError(
+                errorMessage,
+                "Error fetching data: " + error.message
+              )
+            );
+        });
+
+      // Function to fetch data from the API
+      function fetchData(apiUrl) {
+        return fetch(apiUrl).then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        });
+      }
+
+      // Function to add a row to the table
+      function addRowToTable(id, userId, title, body, tableBody) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${id}</td><td>${userId}</td><td>${title}</td><td>${body}</td>`;
+        tableBody.appendChild(row);
+      }
+
+      // Function to populate the table with fetched data
+      function populateTable(data, tableBody, errorMessage) {
+        if (Array.isArray(data)) {
+          data.forEach((item) => {
+            addRowToTable(
+              item.id,
+              item.userId,
+              item.title,
+              item.body,
+              tableBody
+            );
+          });
+        } else {
+          displayError(errorMessage, "Expected an array of objects.");
+        }
+      }
+
+      // Function to clear the table
+      function clearTable(tableBody) {
+        tableBody.innerHTML = "";
+      }
+
+      // Function to clear error messages
+      function clearError(errorMessage) {
+        errorMessage.textContent = "";
+      }
+
+      // Function to display an error message
+      function displayError(errorMessage, message) {
+        errorMessage.textContent = message;
+      }
+    </script>
+  </body>
+</html>
